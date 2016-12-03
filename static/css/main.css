@@ -48,3 +48,8 @@ button#solve-btn {
     display: block;
     margin: 20px auto;
 }
+
+button#generate-btn {
+    display: block;
+    margin: 20px auto;
+}

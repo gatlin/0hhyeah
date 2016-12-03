@@ -15,6 +15,10 @@ const app = new App<Grid>({
             grid.solve();
         }
 
+        if (action['type'] === 'generate') {
+            grid.generate();
+        }
+
         return grid;
     },
     main: scope => {
@@ -34,6 +38,14 @@ const app = new App<Grid>({
             .recv(evt => {
                 scope.actions.send({
                     'type': 'solve'
+                });
+            });
+
+        scope.events.click
+            .filter(evt => evt.getId() === 'generate-btn')
+            .recv(evt => {
+                scope.actions.send({
+                    'type': 'generate'
                 });
             });
     },
