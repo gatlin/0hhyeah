@@ -2,7 +2,7 @@ import { el, App } from './alm/alm';
 import { Grid } from './grid';
 
 const app = new App<Grid>({
-    state: new Grid(8).initialize().generate(),
+    state: new Grid(8).initialize(),
     update: (action, grid) => {
         if (action['type'] === 'click') {
             const coords = action.data;
