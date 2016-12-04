@@ -16,8 +16,7 @@ const app = new App<Grid>({
         }
 
         if (action['type'] === 'generate') {
-            const sz = grid.size;
-            grid = new Grid(sz).initialize().generate();
+            grid.initialize().generate();
         }
 
         return grid;
