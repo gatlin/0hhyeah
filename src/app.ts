@@ -2,7 +2,7 @@ import { el, App } from './alm/alm';
 import { Grid } from './grid';
 
 const app = new App<Grid>({
-    state: new Grid(8).initialize(),
+    state: new Grid(8).initialize().generate(),
     update: (action, grid) => {
         if (action['type'] === 'click') {
             const coords = action.data;
@@ -16,7 +16,8 @@ const app = new App<Grid>({
         }
 
         if (action['type'] === 'generate') {
-            grid.generate();
+            const sz = grid.size;
+            grid = new Grid(sz).initialize().generate();
         }
 
         return grid;

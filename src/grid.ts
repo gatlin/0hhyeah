@@ -2,7 +2,7 @@ import { el } from './alm/alm';
 import { bits2int, sum_bits, random_bit, array_diff } from './util';
 
 export class Grid {
-    private size: number;
+    public size: number;
     private data: Array<number>;
 
     constructor(size: number) {
@@ -311,8 +311,55 @@ export class Grid {
         }
     }
 
+    private randomUnder(n: number): number {
+        return Math.floor(Math.random() * n);
+    }
+
+    private clear() {
+        for (let idx in this.data) {
+            this.data[idx] = 2;
+        }
+    }
+
     public generate() {
-        return;
+        this.clear();
+        let choices = [];
+        let done = false;
+        while (!done) {
+            let locationFound = false;
+            let location;
+            while (!locationFound) {
+                location = this.randomUnder(this.size * this.size);
+                if (this.data[location] === 2) {
+
+                    locationFound = true;
+                }
+            }
+            const color = this.randomUnder(2);
+            this.data[location] = color;
+            choices.push([location, color]);
+            this.solve();
+
+            const verified = this.verify();
+            const completed = this.completed();
+
+            if (verified) {
+                done = true;
+            } else if (completed) {
+                choices.pop();
+            } else if (choices.length > 25) {
+                choices = [];
+                this.clear();
+            }
+        }
+
+        this.clear();
+
+        for (let choice of choices) {
+            this.data[choice[0]] = choice[1];
+        }
+
+        return this;
     }
 
     public render() {
