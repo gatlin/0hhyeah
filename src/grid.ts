@@ -53,11 +53,15 @@ export class Grid {
                 if (val === 2) {
                     return false;
                 }
+
+                if (!this.check_horizontal_double((j * this.size + i), val) ||
+                    !this.check_vertical_double((j * this.size + i), val)) {
+                    return false;
+                }
                 row.push(val);
                 // build up the columns as well
                 colSet[i][j] = val;
             }
-
             const rowNum = bits2int(row);
             if (rowNum in rowsSeen) {
                 return false;
@@ -103,6 +107,26 @@ export class Grid {
 
     private bottom_bounded_cell(idx: number): boolean {
         return idx > (this.size * (this.size - 1));
+    }
+
+    public check_horizontal_double(idx: number, color: number): boolean {
+        const left_neighbor_same = this.left_bounded_cell(idx)
+            ? false
+            : color === this.data[idx - 1];
+        const right_neighbor_same = this.right_bounded_cell(idx)
+            ? false
+            : color === this.data[idx + 1];
+        return (!left_neighbor_same && !right_neighbor_same);
+    }
+
+    public check_vertical_double(idx: number, color: number): boolean {
+        const top_neighbor_same = this.top_bounded_cell(idx)
+            ? false
+            : color === this.data[idx - (this.size)];
+        const bot_neighbor_same = this.bottom_bounded_cell(idx)
+            ? false
+            : color === this.data[idx + (this.size)];
+        return (!top_neighbor_same && !bot_neighbor_same);
     }
 
     public solve_pass() {
@@ -270,11 +294,9 @@ export class Grid {
 
         // go over the rows missing 2, compare them to completed rows, and then
         // finish them
-        console.log('missing2Rows', missing2Rows);
         for (let urow of missing2Rows) {
             for (let frow of completedRows) {
                 const row_diff = array_diff(urow.row, frow.row);
-                console.log('row_diff', row_diff);
                 if (row_diff.length === 2) {
                     this.set(row_diff[0],
                         urow.idx,
@@ -287,11 +309,9 @@ export class Grid {
         }
 
         // and the same for columns
-        console.log('missing2Cols', missing2Cols);
         for (let ucol of missing2Cols) {
             for (let fcol of completedCols) {
                 const col_diff = array_diff(ucol.col, fcol.col);
-                console.log('col_diff', col_diff);
                 if (col_diff.length === 2) {
                     this.set(ucol.idx,
                         col_diff[0],
@@ -304,6 +324,7 @@ export class Grid {
         }
     }
 
+    // given a cell checks to see if it violates any rules
     public solve() {
         let limit = 0;
         while (limit++ < 200 && !this.completed()) {
@@ -323,42 +344,36 @@ export class Grid {
 
     public generate() {
         this.clear();
-        let choices = [];
-        let done = false;
-        while (!done) {
-            let locationFound = false;
-            let location;
-            while (!locationFound) {
-                location = this.randomUnder(this.size * this.size);
-                if (this.data[location] === 2) {
-
-                    locationFound = true;
+        // generate random tiles
+        let attempts = 0;
+        while (attempts++ < (this.size * this.size * 50)) {
+            let emptyCells = false;
+            this.data = this.data.map((currentColor, idx) => {
+                if (currentColor !== 2) {
+                    return currentColor;
                 }
-            }
-            const color = this.randomUnder(2);
-            this.data[location] = color;
-            choices.push([location, color]);
+                emptyCells = true;
+                const color_prob = this.randomUnder(10);
+                if (color_prob < 3) {
+                    let color = this.randomUnder(2);
+                    if (!this.check_vertical_double(idx, color) ||
+                        !this.check_horizontal_double(idx, color)) {
+                        color = (color + 1) % 2;
+                        if (!this.check_vertical_double(idx, color) ||
+                            !this.check_horizontal_double(idx, color)) {
+                            color = 2;
+                        }
+                    }
+                    return color;
+                } else {
+                    return 2;
+                }
+            });
             this.solve();
-
-            const verified = this.verify();
-            const completed = this.completed();
-
-            if (verified) {
-                done = true;
-            } else if (completed) {
-                choices.pop();
-            } else if (choices.length > 25) {
-                choices = [];
-                this.clear();
+            if (!emptyCells) {
+                break;
             }
         }
-
-        this.clear();
-
-        for (let choice of choices) {
-            this.data[choice[0]] = choice[1];
-        }
-
         return this;
     }
 

@@ -819,6 +819,10 @@
 	                    if (val === 2) {
 	                        return false;
 	                    }
+	                    if (!this.check_horizontal_double((j * this.size + i), val) ||
+	                        !this.check_vertical_double((j * this.size + i), val)) {
+	                        return false;
+	                    }
 	                    row.push(val);
 	                    // build up the columns as well
 	                    colSet[i][j] = val;
@@ -864,6 +868,24 @@
 	        };
 	        Grid.prototype.bottom_bounded_cell = function (idx) {
 	            return idx > (this.size * (this.size - 1));
+	        };
+	        Grid.prototype.check_horizontal_double = function (idx, color) {
+	            var left_neighbor_same = this.left_bounded_cell(idx)
+	                ? false
+	                : color === this.data[idx - 1];
+	            var right_neighbor_same = this.right_bounded_cell(idx)
+	                ? false
+	                : color === this.data[idx + 1];
+	            return (!left_neighbor_same && !right_neighbor_same);
+	        };
+	        Grid.prototype.check_vertical_double = function (idx, color) {
+	            var top_neighbor_same = this.top_bounded_cell(idx)
+	                ? false
+	                : color === this.data[idx - (this.size)];
+	            var bot_neighbor_same = this.bottom_bounded_cell(idx)
+	                ? false
+	                : color === this.data[idx + (this.size)];
+	            return (!top_neighbor_same && !bot_neighbor_same);
 	        };
 	        Grid.prototype.solve_pass = function () {
 	            var size = this.size;
@@ -1014,13 +1036,11 @@
 	            }
 	            // go over the rows missing 2, compare them to completed rows, and then
 	            // finish them
-	            console.log('missing2Rows', missing2Rows);
 	            for (var _i = 0, missing2Rows_1 = missing2Rows; _i < missing2Rows_1.length; _i++) {
 	                var urow = missing2Rows_1[_i];
 	                for (var _a = 0, completedRows_1 = completedRows; _a < completedRows_1.length; _a++) {
 	                    var frow = completedRows_1[_a];
 	                    var row_diff = util_1.array_diff(urow.row, frow.row);
-	                    console.log('row_diff', row_diff);
 	                    if (row_diff.length === 2) {
 	                        this.set(row_diff[0], urow.idx, frow.row[row_diff[1]]);
 	                        this.set(row_diff[1], urow.idx, frow.row[row_diff[0]]);
@@ -1028,13 +1048,11 @@
 	                }
 	            }
 	            // and the same for columns
-	            console.log('missing2Cols', missing2Cols);
 	            for (var _b = 0, missing2Cols_1 = missing2Cols; _b < missing2Cols_1.length; _b++) {
 	                var ucol = missing2Cols_1[_b];
 	                for (var _c = 0, completedCols_1 = completedCols; _c < completedCols_1.length; _c++) {
 	                    var fcol = completedCols_1[_c];
 	                    var col_diff = util_1.array_diff(ucol.col, fcol.col);
-	                    console.log('col_diff', col_diff);
 	                    if (col_diff.length === 2) {
 	                        this.set(ucol.idx, col_diff[0], fcol.col[col_diff[1]]);
 	                        this.set(ucol.idx, col_diff[1], fcol.col[col_diff[0]]);
@@ -1042,6 +1060,7 @@
 	                }
 	            }
 	        };
+	        // given a cell checks to see if it violates any rules
 	        Grid.prototype.solve = function () {
 	            var limit = 0;
 	            while (limit++ < 200 && !this.completed()) {
@@ -1057,39 +1076,43 @@
 	            }
 	        };
 	        Grid.prototype.generate = function () {
+	            var _this = this;
 	            this.clear();
-	            var choices = [];
-	            var done = false;
-	            while (!done) {
-	                var locationFound = false;
-	                var location_1 = void 0;
-	                while (!locationFound) {
-	                    location_1 = this.randomUnder(this.size * this.size);
-	                    if (this.data[location_1] === 2) {
-	                        locationFound = true;
+	            // generate random tiles
+	            var attempts = 0;
+	            var _loop_1 = function() {
+	                var emptyCells = false;
+	                this_1.data = this_1.data.map(function (currentColor, idx) {
+	                    if (currentColor !== 2) {
+	                        return currentColor;
 	                    }
+	                    emptyCells = true;
+	                    var color_prob = _this.randomUnder(10);
+	                    if (color_prob < 3) {
+	                        var color = _this.randomUnder(2);
+	                        if (!_this.check_vertical_double(idx, color) ||
+	                            !_this.check_horizontal_double(idx, color)) {
+	                            color = (color + 1) % 2;
+	                            if (!_this.check_vertical_double(idx, color) ||
+	                                !_this.check_horizontal_double(idx, color)) {
+	                                color = 2;
+	                            }
+	                        }
+	                        return color;
+	                    }
+	                    else {
+	                        return 2;
+	                    }
+	                });
+	                this_1.solve();
+	                if (!emptyCells) {
+	                    return "break";
 	                }
-	                var color = this.randomUnder(2);
-	                this.data[location_1] = color;
-	                choices.push([location_1, color]);
-	                this.solve();
-	                var verified = this.verify();
-	                var completed = this.completed();
-	                if (verified) {
-	                    done = true;
-	                }
-	                else if (completed) {
-	                    choices.pop();
-	                }
-	                else if (choices.length > 25) {
-	                    choices = [];
-	                    this.clear();
-	                }
-	            }
-	            this.clear();
-	            for (var _i = 0, choices_1 = choices; _i < choices_1.length; _i++) {
-	                var choice = choices_1[_i];
-	                this.data[choice[0]] = choice[1];
+	            };
+	            var this_1 = this;
+	            while (attempts++ < (this.size * this.size * 50)) {
+	                var state_1 = _loop_1();
+	                if (state_1 === "break") break;
 	            }
 	            return this;
 	        };
